@@ -7,6 +7,9 @@ import re
 from PIL import Image
 import pytesseract
 
+# -------- TESSERACT PATH --------
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 st.set_page_config(page_title="AI Spam Detector", layout="wide")
 
 # ---------------- STYLE ----------------
@@ -66,10 +69,10 @@ elif st.session_state.page == "intro2":
     st.write("""
 Steps:
 
-1. Login to the system
-2. Enter a suspicious message
-3. AI analyzes the text
-4. View Risk Percentage
+1. Login to the system  
+2. Enter a suspicious message  
+3. AI analyzes the text  
+4. View Risk Percentage  
 5. Follow safety recommendation
 """)
 
@@ -133,7 +136,6 @@ elif st.session_state.page == "app":
 
     st.title("AI Spam Detector")
 
-    # Load ML model
     model = pickle.load(open("model.pkl","rb"))
     vectorizer = pickle.load(open("vectorizer.pkl","rb"))
 
