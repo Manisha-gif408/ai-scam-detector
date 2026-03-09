@@ -1,0 +1,23 @@
+import streamlit as st
+import pickle
+
+# Page title
+st.title("AI Scam Message Detector")
+
+# Load trained model
+model = pickle.load(open("model.pkl","rb"))
+vectorizer = pickle.load(open("vectorizer.pkl","rb"))
+
+# Input box
+message = st.text_area("Enter a message")
+
+# Button
+if st.button("Check Message"):
+
+    message_vector = vectorizer.transform([message])
+    prediction = model.predict(message_vector)
+
+    if prediction[0] == 1:
+        st.error("⚠️ Scam Message")
+    else:
+        st.success("✅ Safe Message")
