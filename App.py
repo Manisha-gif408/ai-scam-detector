@@ -4,35 +4,26 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="AI Scam Detector",
-    page_icon="🛡",
-    layout="wide"
-)
+st.set_page_config(page_title="AI Scam Detector", page_icon="🛡", layout="wide")
 
-# ---------------- CUSTOM UI COLORS ----------------
+# ---------------- UI STYLE ----------------
 st.markdown("""
 <style>
-
 body {
-background-color: #f7f8ff;
+background-color:#0f172a;
+color:white;
 }
 
-h1 {
-color: #4b3fe4;
+h1{
+color:#7c6cff;
 }
 
-.stButton>button {
-background-color: #4b3fe4;
-color: white;
-border-radius: 10px;
-height: 3em;
-width: 200px;
-}
-
-.stTextArea textarea {
-background-color: #eef1ff;
+.stButton>button{
+background: linear-gradient(90deg,#4f46e5,#9333ea);
+color:white;
+border-radius:10px;
+height:3em;
+width:200px;
 }
 
 </style>
@@ -42,107 +33,136 @@ background-color: #eef1ff;
 model = pickle.load(open("model.pkl","rb"))
 vectorizer = pickle.load(open("vectorizer.pkl","rb"))
 
-# ---------------- SESSION STORAGE ----------------
+# ---------------- SESSION ----------------
+if "users" not in st.session_state:
+    st.session_state.users = {}
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# ---------------- TITLE ----------------
-st.title("🛡 AI Scam Message Detection System")
+# ---------------- MENU ----------------
+menu = ["Login","Register"]
+choice = st.sidebar.selectbox("Menu",menu)
 
-st.write(
-"Detect scam, phishing, and spam messages using a Machine Learning model."
-)
+# ---------------- REGISTER ----------------
+if choice == "Register":
 
-# ---------------- INPUT MESSAGE ----------------
-message = st.text_area("Enter the message you want to analyze")
+    st.title("📝 Create Account")
 
-# ---------------- DETECTION ----------------
-if st.button("Analyze Message"):
+    username = st.text_input("Username")
+    password = st.text_input("Password",type="password")
 
-    vector = vectorizer.transform([message])
-    prediction = model.predict(vector)[0]
-    probability = model.predict_proba(vector)[0][1]
+    if st.button("Register"):
 
-    risk_score = round(probability * 100, 2)
-    safe_score = 100 - risk_score
+        if username in st.session_state.users:
+            st.warning("User already exists")
 
-    # ---------- RESULT ----------
-    if prediction == 1:
+        else:
+            st.session_state.users[username] = password
+            st.success("Account Created")
 
-        result = "Scam"
+# ---------------- LOGIN ----------------
+if choice == "Login":
 
-        st.error("🚨 Scam Message Detected")
+    st.title("🔐 Login")
 
-        suggestion = """
-        ⚠ Recommended Actions:
-        • Do NOT click unknown links
-        • Do NOT share OTP or bank details
-        • Block the sender
-        • Report the message as spam
-        """
+    username = st.text_input("Username")
+    password = st.text_input("Password",type="password")
 
-    else:
+    if st.button("Login"):
 
-        result = "Safe"
+        if username in st.session_state.users and st.session_state.users[username]==password:
 
-        st.success("✅ Message Looks Safe")
+            st.session_state.logged_in=True
+            st.success("Login Successful")
 
-        suggestion = """
-        ✔ Recommended Actions:
-        • Message appears safe
-        • Still verify unknown links
-        • Avoid sharing sensitive information
-        """
+        else:
 
-    # ---------- RISK SCORE ----------
-    st.subheader("Risk Score")
+            st.error("Invalid credentials")
 
-    st.progress(int(risk_score))
+# ---------------- MAIN APP ----------------
+if st.session_state.logged_in:
 
-    st.write(f"Risk Percentage: **{risk_score}%**")
+    st.title("🛡 AI Scam Message Detection System")
 
-    # ---------- GRAPH ----------
-    st.subheader("Safety Analysis Graph")
+    message = st.text_area("Enter message to analyze")
 
-    labels = ["Risk", "Safe"]
-    values = [risk_score, safe_score]
+    if st.button("Analyze Message"):
 
-    fig = plt.figure()
-    plt.bar(labels, values)
-    plt.title("Message Safety Analysis")
+        vector = vectorizer.transform([message])
+        prediction = model.predict(vector)[0]
+        probability = model.predict_proba(vector)[0][1]
 
-    st.pyplot(fig)
+        risk = round(probability*100,2)
+        safe = 100-risk
 
-    # ---------- LINK DETECTION ----------
-    links = re.findall(r'https?://\S+|www\.\S+', message)
+        if prediction == 1:
 
-    if links:
+            result="Scam"
 
-        st.warning("⚠ Suspicious Links Found")
+            st.error("🚨 Scam Message Detected")
 
-        for link in links:
-            st.write(link)
+            advice="""
+⚠ What you should do:
+• Do NOT click suspicious links
+• Do NOT share OTP or bank info
+• Block sender
+• Report message
+"""
 
-    # ---------- AI SUGGESTION ----------
-    st.subheader("AI Recommendation")
+        else:
 
-    st.info(suggestion)
+            result="Safe"
 
-    # ---------- SAVE HISTORY ----------
-    st.session_state.history.append({
-        "Message": message,
-        "Result": result,
-        "Risk %": risk_score
-    })
+            st.success("✅ Message Looks Safe")
 
-# ---------------- DASHBOARD ----------------
-st.subheader("Detection History")
+            advice="""
+✔ Recommended:
+• Verify unknown senders
+• Avoid sharing sensitive data
+"""
 
-if st.session_state.history:
+        st.subheader("Risk Score")
 
-    df = pd.DataFrame(st.session_state.history)
-    st.dataframe(df)
+        st.progress(int(risk))
+        st.write(f"Risk Percentage: **{risk}%**")
 
-else:
+        st.subheader("Safety Analysis Graph")
 
-    st.write("No messages analyzed yet")
+        fig=plt.figure()
+
+        labels=["Risk","Safe"]
+        values=[risk,safe]
+
+        plt.bar(labels,values)
+
+        st.pyplot(fig)
+
+        links = re.findall(r'https?://\S+|www\.\S+', message)
+
+        if links:
+
+            st.warning("⚠ Suspicious Links Detected")
+
+            for link in links:
+                st.write(link)
+
+        st.subheader("AI Recommendation")
+
+        st.info(advice)
+
+        st.session_state.history.append({
+            "Message":message,
+            "Result":result,
+            "Risk %":risk
+        })
+
+    st.subheader("Detection History")
+
+    if st.session_state.history:
+
+        df=pd.DataFrame(st.session_state.history)
+        st.dataframe(df)
